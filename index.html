@@ -10,6 +10,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
         rel="stylesheet">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="apple-touch-icon" href="logo.png">
@@ -54,6 +55,9 @@
             <div class="user-grid">
                 <!-- Ordering Section -->
                 <section class="menu-selection-section glass-card">
+                    <div id="user-site-image-container" style="display:none; margin-bottom: 1.5rem;">
+                        <img id="user-site-image" src="" style="width:100%; border-radius:12px; object-fit: cover; max-height: 250px; border: 1px solid var(--border);">
+                    </div>
                     <h2>選擇餐點 <span class="subtitle">選擇日期與菜單</span></h2>
                     <div class="input-group">
                         <label for="user-order-date">取餐日期 (Date)</label>
@@ -196,6 +200,24 @@
                         </div>
                     </div>
 
+                    <div class="glass-card mb-1">
+                        <h2>首頁圖片設定</h2>
+                        <div class="input-group">
+                            <label>上傳首頁圖片 (建議橫向)</label>
+                            <input type="file" id="upload-site-image" accept="image/*" class="custom-select" style="padding: 0.5rem;">
+                        </div>
+                        <div id="cropper-container" style="display:none; margin-top: 1rem;">
+                            <div style="max-height: 300px; margin-bottom: 0.5rem; overflow:hidden;">
+                                <img id="image-to-crop" style="max-width: 100%; display:block;">
+                            </div>
+                            <button id="btn-crop-image" class="btn-primary" type="button"><i class='bx bx-crop'></i> 裁切並發佈</button>
+                        </div>
+                        <div class="mt-1">
+                            <label>目前首頁圖片：</label>
+                            <img id="admin-image-preview" src="" style="width:100%; border-radius:8px; display:none; margin-top:0.5rem; border: 1px solid var(--border);">
+                        </div>
+                    </div>
+
                     <div class="glass-card">
                         <h2>系統設定</h2>
                         <form id="system-settings-form" class="admin-form">
@@ -231,6 +253,7 @@
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
     <script src="app.js"></script>
 </body>
 

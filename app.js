@@ -17,6 +17,7 @@ let state = {
     menu: [],
     orders: [],
     deadline: '',
+    siteImage: '',
     cart: [], // Local only
     adminAuthenticated: false,
     maxSeats: 100,
@@ -64,6 +65,12 @@ function initDatabaseSync() {
     db.ref('history').on('value', (snapshot) => {
         state.history = snapshot.val() || [];
         renderMenuShortcuts();
+    });
+
+    // Sync Site Image
+    db.ref('siteImage').on('value', (snapshot) => {
+        state.siteImage = snapshot.val() || '';
+        updateSiteImageDisplay();
     });
 }
 
@@ -118,6 +125,24 @@ function updateMenuItemStock(itemId, newStock) {
     const itemIndex = state.menu.findIndex(m => m.id === itemId);
     if (itemIndex !== -1) {
         db.ref(`menu/${itemIndex}/stock`).set(newStock);
+    }
+}
+
+function updateSiteImageDisplay() {
+    const userImgContainer = document.getElementById('user-site-image-container');
+    const userImg = document.getElementById('user-site-image');
+    const adminImg = document.getElementById('admin-image-preview');
+    
+    if (state.siteImage) {
+        if (userImgContainer) userImgContainer.style.display = 'block';
+        if (userImg) userImg.src = state.siteImage;
+        if (adminImg) {
+            adminImg.style.display = 'block';
+            adminImg.src = state.siteImage;
+        }
+    } else {
+        if (userImgContainer) userImgContainer.style.display = 'none';
+        if (adminImg) adminImg.style.display = 'none';
     }
 }
 
@@ -401,9 +426,22 @@ function renderAdminOrders() {
         const groupOrders = groups[date];
         let expected = 0;
         let received = 0;
+        let totalMeals = 0;
+        let totalExtraRice = 0;
+
         groupOrders.forEach(o => {
             expected += o.total;
             if (o.paid) received += o.total;
+
+            if (o.items) {
+                o.items.forEach(i => {
+                    if (i.name.includes('加飯')) {
+                        totalExtraRice += i.qty;
+                    } else {
+                        totalMeals += i.qty;
+                    }
+                });
+            }
         });
 
         const section = document.createElement('div');
@@ -418,9 +456,14 @@ function renderAdminOrders() {
                     ${isExpired ? '<span style="font-size:0.7rem; background:var(--danger); color:white; padding:2px 6px; border-radius:4px; margin-left:8px;">已過期</span>' : ''}
                 </h3>
                 <div style="display:flex; align-items:center; gap:1rem;">
+                    <div style="font-size:0.9rem; text-align:right; border-right: 1px solid var(--border); padding-right: 1rem;">
+                        <span style="display:block; color:var(--text-muted); font-size:0.8rem;">今日總數</span>
+                        <span style="display:block;">餐點: <strong>${totalMeals}</strong> 份</span>
+                        <span style="display:block;">加飯: <strong>${totalExtraRice}</strong> 份</span>
+                    </div>
                     <div style="font-size:0.9rem; text-align:right;">
-                        <span style="display:block;">應收: <strong style="color:var(--secondary);">$${expected}</strong></span>
-                        <span style="display:block;">已收: <strong style="color:var(--success);">$${received}</strong></span>
+                        <span style="display:block;">應收: <strong style="color:var(--warning);">$${expected}</strong></span>
+                        <span style="display:block;">已收: <strong style="color:var(--accent);">$${received}</strong></span>
                     </div>
                     <button class="btn-delete" title="刪除整日訂單" onclick="deleteDateOrders('${date}')" style="width: auto; padding: 0 10px; height: 32px; font-size: 0.8rem;">
                         <i class='bx bx-trash'></i> 刪除全天
@@ -698,6 +741,59 @@ document.addEventListener('DOMContentLoaded', () => {
         saveSettings();
         showToast('設定已儲存');
     };
+
+    // Image Upload & Cropping Logic
+    const uploadInput = document.getElementById('upload-site-image');
+    const cropBtn = document.getElementById('btn-crop-image');
+    let dbCropper = null;
+
+    if (uploadInput && cropBtn) {
+        uploadInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById('cropper-container').style.display = 'block';
+                const image = document.getElementById('image-to-crop');
+                image.src = event.target.result;
+
+                if (dbCropper) {
+                    dbCropper.destroy();
+                }
+                dbCropper = new Cropper(image, {
+                    aspectRatio: 16 / 9,
+                    viewMode: 1,
+                    background: false,
+                });
+            };
+            reader.readAsDataURL(file);
+        });
+
+        cropBtn.addEventListener('click', () => {
+            if (!dbCropper) return;
+            showToast('處理中...');
+            
+            const canvas = dbCropper.getCroppedCanvas({
+                width: 800,
+                height: 450,
+            });
+
+            const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+
+            db.ref('siteImage').set(base64Image).then(() => {
+                showToast('圖片已更新成功');
+                document.getElementById('cropper-container').style.display = 'none';
+                uploadInput.value = '';
+                if (dbCropper) {
+                    dbCropper.destroy();
+                    dbCropper = null;
+                }
+            }).catch((err) => {
+                showToast('圖片上傳失敗，可能檔案太大！');
+            });
+        });
+    }
 
     // Admin Table Actions
     const adminOrdersContainer = document.getElementById('admin-orders-container');
