@@ -25,6 +25,10 @@ let state = {
     history: [] // Historical meal items
 };
 
+function getLocalDateStr(dateObj = new Date()) {
+    const offset = dateObj.getTimezoneOffset() * 60000;
+    return new Date(dateObj.getTime() - offset).toISOString().split('T')[0];
+}
 // --- Data Synchronization ---
 
 // Listen for Database Changes
@@ -132,6 +136,7 @@ function updateSiteImageDisplay() {
     const userImgContainer = document.getElementById('user-site-image-container');
     const userImg = document.getElementById('user-site-image');
     const adminImg = document.getElementById('admin-image-preview');
+    const adminDelBtn = document.getElementById('btn-delete-site-image');
     
     if (state.siteImage) {
         if (userImgContainer) userImgContainer.style.display = 'block';
@@ -140,9 +145,11 @@ function updateSiteImageDisplay() {
             adminImg.style.display = 'block';
             adminImg.src = state.siteImage;
         }
+        if (adminDelBtn) adminDelBtn.style.display = 'flex';
     } else {
         if (userImgContainer) userImgContainer.style.display = 'none';
         if (adminImg) adminImg.style.display = 'none';
+        if (adminDelBtn) adminDelBtn.style.display = 'none';
     }
 }
 
@@ -171,7 +178,7 @@ function isDeadlinePassed() {
 }
 
 function isOrderAllowed(dateStr) {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr(new Date());
     if (!dateStr || dateStr < todayStr) return false;
     if (dateStr === todayStr) {
         return !isDeadlinePassed();
@@ -254,7 +261,7 @@ function updateDeadlineBanner() {
     const orderDateInput = document.getElementById('user-order-date');
     if (!orderDateInput) return;
     const orderDateStr = orderDateInput.value;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr(new Date());
     
     const isPast = orderDateStr < todayStr;
     const isAllowed = isOrderAllowed(orderDateStr);
@@ -416,7 +423,7 @@ function renderAdminOrders() {
         groups[d].push(order);
     });
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr(new Date());
     const dates = Object.keys(groups).sort(); // Base chronological sort
 
     const activeDates = dates.filter(d => d >= todayStr);
@@ -559,7 +566,7 @@ function renderPublicOrders() {
     tbody.innerHTML = '';
 
     const orderDateInput = document.getElementById('user-order-date');
-    const targetDate = orderDateInput ? orderDateInput.value : new Date().toISOString().split('T')[0];
+    const targetDate = orderDateInput ? orderDateInput.value : getLocalDateStr(new Date());
     
     const titleDateSpan = document.getElementById('public-orders-title-date');
     if (titleDateSpan) titleDateSpan.textContent = `${targetDate} 的訂單狀態`;
@@ -795,6 +802,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const deleteSiteImageBtn = document.getElementById('btn-delete-site-image');
+    if (deleteSiteImageBtn) {
+        deleteSiteImageBtn.addEventListener('click', () => {
+            if (confirm('確定要刪除首頁圖片嗎？')) {
+                db.ref('siteImage').remove().then(() => {
+                    showToast('已刪除首頁圖片');
+                });
+            }
+        });
+    }
+
     // Admin Table Actions
     const adminOrdersContainer = document.getElementById('admin-orders-container');
     adminOrdersContainer.onchange = (e) => {
@@ -821,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // User Ordering
     const orderDateInput = document.getElementById('user-order-date');
     if (orderDateInput) {
-        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStr = getLocalDateStr(new Date());
         orderDateInput.value = todayStr;
         orderDateInput.min = todayStr;
         orderDateInput.onchange = () => {
@@ -888,7 +906,7 @@ function updateDateLimits() {
 
     // Dynamic Date Update
     if (orderDateInput) {
-        const todayStr = now.toISOString().split('T')[0];
+        const todayStr = getLocalDateStr(now);
         if (orderDateInput.min !== todayStr) {
             orderDateInput.min = todayStr;
             // If the selected date is in the past due to midnight passing, move it to today
