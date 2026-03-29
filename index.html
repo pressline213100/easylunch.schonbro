@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>買飯系統 - Food Ordering System</title>
+    <link rel="stylesheet" href="style.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <link rel="apple-touch-icon" href="logo.png">
+</head>
+
+<body>
+    <!-- Admin Password Modal Overlay -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="glass-card modal-content">
+            <h2>管理員登入</h2>
+            <p style="color:var(--text-muted); margin-bottom: 1rem;">請輸入管理員密碼以繼續</p>
+            <div class="input-group">
+                <input type="password" id="admin-password" placeholder="密碼">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="btn-cancel-admin">取消</button>
+                <button class="btn-primary" id="btn-submit-admin">確認</button>
+            </div>
+            <button id="btn-reset-pwd"
+                style="background:none; color:var(--text-muted); font-size:0.8rem; margin-top:1rem; text-decoration:underline;">忘記密碼</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <img src="logo.png" alt="Logo" style="width: 48px; height: 48px; object-fit: cover; border-radius: 50%; border: 2px solid var(--primary); background: white;">
+                <h1>買飯系統</h1>
+            </div>
+            <div class="role-switcher">
+                <button id="btn-user" class="active">一般使用者</button>
+                <button id="btn-admin">管理員</button>
+            </div>
+        </header>
+
+        <!-- User View -->
+        <main id="view-user" class="view active">
+            <div class="glass-card deadline-banner" id="user-deadline-banner">
+                <i class='bx bx-time-five'></i> <span id="user-deadline-text">尚未設定截止時間</span>
+            </div>
+
+            <div class="user-grid">
+                <!-- Ordering Section -->
+                <section class="menu-selection-section glass-card">
+                    <h2>選擇餐點 <span class="subtitle">選擇日期與菜單</span></h2>
+                    <div class="input-group">
+                        <label for="user-order-date">取餐日期 (Date)</label>
+                        <input type="date" id="user-order-date" class="custom-select" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="user-menu-select">選擇要購買的餐點</label>
+                        <select id="user-menu-select" class="custom-select">
+                            <!-- Populated via JS -->
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="user-menu-qty">數量</label>
+                        <select id="user-menu-qty" class="custom-select">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <button id="btn-add-to-cart" class="btn-secondary mt-1">選好了，加入購物車</button>
+                </section>
+
+                <!-- Cart & Checkout Section -->
+                <section class="order-section">
+                    <h2>我的購物車 <span class="subtitle">My Cart</span></h2>
+                    <div id="cart-list" class="cart-items">
+                        <p class="empty-state">購物車內還沒有餐點唷！</p>
+                    </div>
+                    <div class="cart-summary">
+                        <span>總計:</span>
+                        <span id="cart-total" class="price">$0</span>
+                    </div>
+
+                    <form id="order-form" class="user-form mt-2">
+                        <div class="input-group">
+                            <label for="user-seat">座號 (Seat Number)</label>
+                            <select id="user-seat" class="custom-select" required>
+                                <option value="" disabled selected>請選擇您的座號</option>
+                                <!-- Populated 1-100 via JS -->
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary" id="btn-submit-order" disabled>送出訂單</button>
+                    </form>
+                </section>
+                <section class="public-orders glass-card mt-2">
+                    <h2>公開訂單板 <span class="subtitle" id="public-orders-title-date">指定日期的訂單狀態</span></h2>
+                    <div class="table-responsive">
+                        <table class="orders-table">
+                            <thead>
+                                <tr>
+                                    <th>座號</th>
+                                    <th>內容</th>
+                                    <th>總價</th>
+                                    <th>狀態</th>
+                                    <th>找錢</th>
+                                </tr>
+                            </thead>
+                            <tbody id="public-orders-table-body">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+        </main>
+
+        <main id="view-admin" class="view">
+            <div class="admin-dashboard-layout">
+                <!-- Sidebar: Controls & Settings -->
+                <aside class="admin-controls-sidebar">
+                    <div class="glass-card mb-1">
+                        <h2>新增餐點 <span class="subtitle">設定與庫存</span></h2>
+                        <form id="add-menu-form" class="admin-form">
+                            <div class="input-group">
+                                <label>餐點名稱</label>
+                                <input type="text" id="menu-item-name" placeholder="例如：排骨飯" required>
+                            </div>
+                            <div class="input-group">
+                                <label>價格 (元)</label>
+                                <input type="number" id="menu-item-price" placeholder="例如：95" min="0" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label>快捷選取 (曾上架品項)</label>
+                                <div id="menu-shortcuts" class="shortcut-container">
+                                    <span style="font-size:0.8rem; color:var(--text-muted);">尚無歷史紀錄</span>
+                                </div>
+                            </div>
+
+                            <div class="input-group">
+                                <label>供應日期</label>
+                                <select id="menu-item-day" class="custom-select">
+                                    <option value="ALL">固定 (每天供應)</option>
+                                    <option value="1">星期一</option>
+                                    <option value="2">星期二</option>
+                                    <option value="3">星期三</option>
+                                    <option value="4">星期四</option>
+                                    <option value="5">星期五</option>
+                                    <option value="6">星期六</option>
+                                    <option value="0">星期日</option>
+                                </select>
+                            </div>
+
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="menu-item-has-limit">
+                                <label for="menu-item-has-limit">啟用庫存限制</label>
+                            </div>
+
+                            <div class="input-group mt-1" id="limit-input-group" style="display: none;">
+                                <label>庫存量</label>
+                                <input type="number" id="menu-item-limit" placeholder="輸入上限" min="1">
+                            </div>
+
+                            <button type="submit" class="btn-secondary mt-1"><i class='bx bx-plus'></i> 新增餐點</button>
+                        </form>
+                    </div>
+
+                    <div class="glass-card mb-1">
+                        <h2>訂單設定</h2>
+                        <form id="set-deadline-form" class="admin-form">
+                            <div class="input-group">
+                                <label>截止時間</label>
+                                <input type="time" id="deadline-time" required>
+                            </div>
+                            <button type="submit" class="btn-secondary"><i class='bx bx-check'></i> 儲存時間</button>
+                        </form>
+                        <div class="current-deadline" id="admin-current-deadline">目前截止：未設定</div>
+                    </div>
+
+                    <div class="glass-card mb-1">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h2 style="margin:0;">目前上架中</h2>
+                            <button id="btn-delete-all-menu" class="btn-delete" style="width:auto; height:24px; padding:0 8px; font-size:0.7rem;">
+                                <i class='bx bx-trash'></i> 全部清空
+                            </button>
+                        </div>
+                        <div class="admin-menu-list" id="admin-menu-list">
+                            <!-- Menu items injected here -->
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <h2>系統設定</h2>
+                        <form id="system-settings-form" class="admin-form">
+                            <div class="input-group">
+                                <label>管理員密碼</label>
+                                <input type="password" id="settings-admin-password" placeholder="輸入新密碼">
+                            </div>
+                            <div class="input-group">
+                                <label>座號最大值</label>
+                                <input type="number" id="settings-max-seats" min="1" value="100" required>
+                            </div>
+                            <button type="submit" class="btn-secondary mt-1"><i class='bx bx-cog'></i> 儲存</button>
+                        </form>
+                    </div>
+                </aside>
+
+                <!-- Main area: Orders Dashboard -->
+                <section class="admin-main-dashboard">
+                    <section class="orders-dashboard glass-card">
+                        <div class="dashboard-header">
+                            <h2>訂單管理中心 <span class="subtitle">Real-time Dashboard</span></h2>
+                        </div>
+                        <div id="admin-orders-container">
+                            <p class="empty-state">尚無訂單資料</p>
+                        </div>
+                    </section>
+                </section>
+            </div>
+        </main>
+
+        <div id="toast-container"></div>
+    </div>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
