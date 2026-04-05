@@ -433,12 +433,16 @@ function renderAdminOrders() {
         const groupOrders = groups[date];
         let expected = 0;
         let received = 0;
+        let totalChange = 0;
         let totalMeals = 0;
         let totalExtraRice = 0;
 
         groupOrders.forEach(o => {
             expected += o.total;
-            if (o.paid) received += o.total;
+            const change = parseFloat(o.changeAmount) || 0;
+            totalChange += change;
+
+            if (o.paid) received += (o.total + change);
 
             if (o.items) {
                 o.items.forEach(i => {
@@ -471,6 +475,7 @@ function renderAdminOrders() {
                     <div style="font-size:0.9rem; text-align:right;">
                         <span style="display:block;">應收: <strong style="color:var(--warning);">$${expected}</strong></span>
                         <span style="display:block;">已收: <strong style="color:var(--accent);">$${received}</strong></span>
+                        <span style="display:block;">應找錢: <strong style="color:var(--danger);">$${totalChange}</strong></span>
                     </div>
                     <button class="btn-delete" title="刪除整日訂單" onclick="deleteDateOrders('${date}')" style="width: auto; padding: 0 10px; height: 32px; font-size: 0.8rem;">
                         <i class='bx bx-trash'></i> 刪除全天
